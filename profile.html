@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .achievement-btn {
+            margin: 4px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        /* Modal */
+        #modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+        }
+
+        #modalContent {
+            background: white;
+            padding: 16px;
+            width: 320px;
+            margin: 15% auto;
+            border-radius: 6px;
+        }
+
+        #closeModal {
+            float: right;
+            cursor: pointer;
+            font-weight: bold;
+            
+        }
+        
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div style="display: none;" id="userSearch">
+  <h1>User Search</h1>
+  <input type="text" id="nameSearch" placeholder="Put Username Here"/>
+  <button id="userSubmit" onclick="fetchProfile()">Search</button>
+</div>
+
+
+<div class="profileInfo" id="profileInfo">
+    <h1 id="USERNAME">Loading...</h1>
+
+    <h2>Achievements/Badges</h2>
+    <div id="achievementsContainer">Loading...</div>
+    <h2 style="display: none;">Bio:</h2>
+    <p style="display: none;" id="BIO"></p>
+    <br>
+    <p id="BANNED" style="display:none;"></p>
+
+    <!-- Modal -->
+    <div id="modal">
+        <div id="modalContent">
+            <span id="closeModal">X</span>
+            <h3 id="modalTitle"></h3>
+            <p id="modalAbout"></p>
+        </div>
+    </div>
+</div>
+    <script>
+    const profileInfo = document.getElementById("profileInfo");
+    const userSearch = document.getElementById("userSearch");
+    
+  
+    //Set the User to search from the URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const userToSearch = urlParams.get("user");
+      document.title = `${userToSearch}'s Profile`;
+        
+      
+  
+        const SUPABASE_URL = "https://cjctbzgebedmhylmhmuj.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RiemdlYmVkbWh5bG1obXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjA2MDAsImV4cCI6MjA4MDc5NjYwMH0.XetU-QXEKxIFruX5_HrdRH1AhXKtQpkhrtYNrOS37Qc";
+
+        const supabaseClient = supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+        const modal = document.getElementById("modal");
+        const modalTitle = document.getElementById("modalTitle");
+        const modalAbout = document.getElementById("modalAbout");
+
+        document.getElementById("closeModal").onclick = () => {
+            modal.style.display = "none";
+        };
+
+        function openAchievement(name, about) {
+            modalTitle.textContent = name;
+            modalAbout.textContent = about;
+            modal.style.display = "block";
+        }
+
+        async function fetchProfile() {
+    // Ensure we use the user from the URL if available
+    const searchName = userToSearch || document.getElementById('nameSearch').value;
+    
+    if (!searchName) return; // Don't search if empty
+
+    profileInfo.style.display = 'block'; // Fixed .style property
+    
+    const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("username, bio, Banned, achievements")
+        .eq("username", searchName)
+        .maybeSingle();
+
+    if (error || !data) {
+        console.error(error);
+        document.getElementById("USERNAME").textContent = "User not found";
+        return;
+    }
+
+    document.getElementById("USERNAME").textContent = data.username;
+    document.getElementById("BIO").textContent = data.bio ?? 'No Bio';
+    document.getElementById("BANNED").textContent =
+        "Banned Status: " + (data.Banned ?? "Not Banned");
+
+    loadAchievements(data.achievements);
+}
+
+
+        async function loadAchievements(achievementIds) {
+            const container = document.getElementById("achievementsContainer");
+            container.innerHTML = "";
+
+            if (!achievementIds || achievementIds.length === 0) {
+                container.textContent = "No Achievements";
+                return;
+            }
+
+            // Accept array OR "1,2,3"
+            if (typeof achievementIds === "string") {
+                achievementIds = achievementIds
+                    .split(",")
+                    .map(id => parseInt(id.trim()))
+                    .filter(id => !isNaN(id));
+            }
+
+            if (achievementIds.length === 0) {
+                container.textContent = "No Achievements";
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from("achievements")
+                .select("id, name, about")
+                .in("id", achievementIds);
+
+            if (error) {
+                console.error(error);
+                container.textContent = "Failed to load achievements";
+                return;
+            }
+
+            data.forEach(ach => {
+                const btn = document.createElement("button");
+                btn.className = "achievement-btn";
+                btn.textContent = ach.name;
+
+                btn.onclick = () => {
+                    openAchievement(ach.name, ach.about);
+                };
+
+                container.appendChild(btn);
+            });
+        }
+        if (userToSearch != null) {
+          fetchProfile();
+        }
+
+    </script>
+</body>
+</html>

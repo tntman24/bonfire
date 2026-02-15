@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  </head>
+
+  <body>
+    <h2>Sign In</h2>
+
+    <label for="uuid">Password:</label>
+    <input id="uuid" type="password" />
+
+    <button id="submitBtn">Sign In</button>
+
+    <br><br>
+
+    <label for="roleSelect" id="roleSelectText" style="display:none;">Select Role:</label>
+    <select id="roleSelect" style="display:none;"></select>
+    <a href="chat.html"><button>Enter Chat</button></a>
+    <script>
+      // Supabase
+      const supabaseUrl = "https://cjctbzgebedmhylmhmuj.supabase.co";
+      const supabaseKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RiemdlYmVkbWh5bG1obXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjA2MDAsImV4cCI6MjA4MDc5NjYwMH0.XetU-QXEKxIFruX5_HrdRH1AhXKtQpkhrtYNrOS37Qc";
+
+      const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+      // Pull UUID from query OR localStorage
+      const urlParams = new URLSearchParams(window.location.search);
+      const uuidFromForm = urlParams.get("password");
+      const savedUUID = localStorage.getItem("uuid");
+
+      const finalUUID = uuidFromForm || savedUUID;
+      document.getElementById("uuid").value = finalUUID || "";
+
+      // If we autologged in, lookup immediately
+      if (finalUUID) {
+        document.getElementById("submitBtn").click();
+      }
+
+      function populateRoleDropdown(roleArray) {
+        const select = document.getElementById("roleSelect");
+        select.innerHTML = "";
+        select.style.display = "inline-block";
+
+
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Select a role --";
+        select.appendChild(placeholder);
+
+        roleArray.forEach((r) => {
+          const opt = document.createElement("option");
+          opt.value = r;
+          opt.textContent = r;
+          select.appendChild(opt);
+        });
+
+        const savedRole = localStorage.getItem("role");
+        if (savedRole && roleArray.includes(savedRole)) {
+          select.value = savedRole;
+        }
+      }
+
+      document.getElementById("roleSelect").addEventListener("change", () => {
+        const selected = document.getElementById("roleSelect").value;
+        if (selected) {
+          localStorage.setItem("role", selected);
+        } else {
+          localStorage.removeItem("role");
+        }
+      });
+
+      // Lookup UUID in Supabase
+      document.getElementById("submitBtn").addEventListener("click", async () => {
+        const uuid = document.getElementById("uuid").value.trim();
+        if (!uuid) return alert("Enter Password");
+
+        const { data, error } = await supabaseClient
+          .from("profiles")
+          .select("id, BonID, role")
+          .eq("BonID", uuid)
+          .maybeSingle();
+
+        if (error) return alert("Database error (check console)");
+
+        if (!data) {
+          alert("UUID not found");
+          document.getElementById("roleSelect").style.display = "none";
+          return;
+        } else {
+          document.getElementById("roleSelectText").style.display = "block";
+          localStorage.setItem("userID",data.id);
+        }
+
+        if (!Array.isArray(data.role) || data.role.length === 0) {
+          alert("No roles found");
+          return;
+        }
+       
+
+        populateRoleDropdown(data.role);
+      });
+    </script>
+  </body>
+</html>

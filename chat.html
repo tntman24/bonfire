@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Simple Chat</title>
+        <link rel="icon" type="image/x-icon" href="/bonfireIcon.png">
+
+
+    <!-- Supabase JS client from CDN (v2) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
+    <!-- Ban check (loads after Supabase so it can use window.supabase if needed) -->
+    <script src="https://bonfire-chat.neocities.org/TESTING/banCheck.js"></script>
+    
+    <script src="/specialRankColors.js"></script>
+    <script src="/serverCommands.js"></script>
+
+
+    <link rel="stylesheet" href="/CSS/style.css" />
+    <link rel="stylesheet" href="/CSS/chat.css" />
+
+    <style>
+      .box {
+        width: 100%;
+        height: auto;
+        background-color: red;
+      }
+      
+      input {
+        width: 180px;
+      }
+      
+      h3 {
+        color: white;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Username section -->
+    <div class="username">
+      <label for="username">Username:</label>
+      <input id="username" type="text" placeholder="Enter your username" />
+      <br />
+      <a href="auth.html"><button type="button">Log into Bonfire</button></a>
+      <br />
+      <br>
+      <hl>
+      <h3>Rooms</h3>
+      <a href="?room=main"><button>Main</button></a>
+      <a href="?room=games"><button>Games</button></a>
+      <a href="?room=memes"><button>Memes</button></a>
+      </hl>
+    </div>
+
+    <!-- Messages will appear here -->
+    <div class="messages" id="messages">
+    <p>Connecting...</p>
+    </div>
+<audio id="player" style="display:none;"></audio>
+
+    <center>
+      <input
+        class="messageBox"
+        id="message"
+        type="text"
+        placeholder="Type a message | Press Enter to Send"
+        autocomplete="off"
+      />
+      <button class="sendButton" id="send" type="button">Send</button>
+
+      <br /><br />
+      <!-- Keep room when navigating -->
+      <a id="enterChatLink" href="chat.html"><button type="button">Enter Chat</button></a>
+    </center>
+    
+    <!-- DO NOT TOUCH THIS! THE ENTIRE CHAT SYSTEM WILL BREAK -->
+    <script>
+/* ---------------- ROOM SETUP ---------------- */
+
+const urlParams = new URLSearchParams(window.location.search);
+const room = (urlParams.get("room") || "main").trim();
+const timeMilli = 86400000 / 2;
+const timeOn = Date.now() - timeMilli;
+
+document.title = room !== "main" ? `Bonfire - ${room}` : "Bonfire";
+
+document.getElementById("enterChatLink").href =
+  `chat.html?room=${encodeURIComponent(room)}`;
+
+/* ---------------- SUPABASE ---------------- */
+
+const supabaseUrl = "https://cjctbzgebedmhylmhmuj.supabase.co";
+const supabaseKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RiemdlYmVkbWh5bG1obXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjA2MDAsImV4cCI6MjA4MDc5NjYwMH0.XetU-QXEKxIFruX5_HrdRH1AhXKtQpkhrtYNrOS37Qc";
+
+const client = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+/* ---------------- ELEMENTS ---------------- */
+
+const usernameInput = document.getElementById("username");
+const messageInput = document.getElementById("message");
+const sendButton = document.getElementById("send");
+const messagesDiv = document.getElementById("messages");
+
+/* ---------------- USERNAME ---------------- */
+
+function getUsername() {
+  return usernameInput.value.trim() || "Anonymous";
+}
+
+usernameInput.addEventListener("input", () => {
+  localStorage.setItem("chat_username", usernameInput.value.trim());
+});
+
+const storedName = localStorage.getItem("chat_username");
+if (storedName) usernameInput.value = storedName;
+
+/* ---------------- MESSAGE DISPLAY ---------------- */
+
+function setRankColor(el, rank) {
+  if (rank === "Owner") el.style.color = "#ebb736";
+  else if (rank === "PATRIOT") el.style.color = "blue";
+  else if (rank === "Lead Developer") el.style.color = "#4a9905";
+  else if (rank === "Head Moderator") el.style.color = "#8928f7";
+  else if (rank === "Jr Dev") el.style.color = "#1aa31a";
+  else el.style.color = "white";
+}
+
+function appendMessage(msg) {
+  let rankTag = msg.rank ? ` [${msg.rank}]` : "";
+  const time = msg.created_at ? new Date(msg.created_at) : new Date();
+  const timeString = time.toLocaleTimeString();
+
+  /* --- TENOR GIF --- */
+  if (
+    msg.message.includes("https://media1.tenor.com") ||
+    msg.message.includes("https://media.tenor.com")
+  ) {
+    const wrapper = document.createElement("div");
+
+    const label = document.createElement("p");
+    label.textContent = `${msg.username}${rankTag}:`;
+    label.title = `Message sent at ${timeString}`;
+    setRankColor(label, msg.rank);
+
+    const img = document.createElement("img");
+    img.src = msg.message;
+    img.style.maxWidth = "300px";
+    img.style.display = "block";
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(img);
+    messagesDiv.appendChild(wrapper);
+  }
+  /* --- NORMAL LINK --- */
+  else if (msg.message.startsWith("https://")) {
+    const link = document.createElement("a");
+    link.href = msg.message;
+    link.target = "_blank";
+    link.textContent = `${msg.username}${rankTag}: ${msg.message}`;
+    link.title = `Message sent at ${timeString}`;
+    setRankColor(link, msg.rank);
+    messagesDiv.appendChild(link);
+  }
+  /* --- NORMAL TEXT --- */
+  else {
+    const p = document.createElement("p");
+    p.textContent = `${msg.username}${rankTag}: ${msg.message}`;
+    p.title = `Message sent at ${timeString}`;
+    setRankColor(p, msg.rank);
+
+    p.addEventListener("click", () => {
+      window.open(
+        `profile?user=${encodeURIComponent(msg.username)}`,
+        `${msg.username}'s Profile`,
+        "popup"
+      );
+    });
+
+    messagesDiv.appendChild(p);
+  }
+
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  if (document.hidden) {
+    unreadCount++;
+    updateTitle();
+  }
+}
+
+/* ---------------- LOAD OLD MESSAGES ---------------- */
+
+async function loadMessages() {
+  const { data, error } = await client
+    .from("messages")
+    .select("*")
+    .eq("room", room)
+    .order("created_at", { ascending: true })
+    .gt("epochTime", timeOn);
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  messagesDiv.innerHTML = "";
+  (data || []).forEach(appendMessage);
+}
+
+/* ---------------- SEND MESSAGE ---------------- */
+
+async function sendMessage() {
+  let username = getUsername();
+  const text = messageInput.value.trim();
+  const timeSent = Date.now();
+  const userId = localStorage.getItem("userID");
+
+  if (username.length >= 20) {
+    alert("Username must be under 20 characters.");
+    return;
+  }
+
+  if (username.includes("Mukouda")) {
+    username = "Mafia";
+  }
+
+  if (username === "Anonymous") {
+    alert("Please enter a username.");
+    return;
+  }
+
+  if (!text) return;
+
+  const savedRole = (localStorage.getItem("role") || "").trim();
+
+  const payload = {
+    username,
+    message: text,
+    room,
+    epochTime: timeSent,
+    userId
+  };
+
+  if (savedRole) payload.rank = savedRole;
+
+  const { error } = await client.from("messages").insert(payload);
+
+if (error) {
+  console.error("Supabase Insert Error:", error);
+  alert("Message failed to send. Check console.");
+  return;
+}
+
+
+  messageInput.value = "";
+}
+
+/* ---------------- REALTIME ---------------- */
+
+client
+  .channel(`public:messages:${room}`)
+  .on(
+    "postgres_changes",
+    {
+      event: "INSERT",
+      schema: "public",
+      table: "messages",
+      filter: `room=eq.${room}`,
+    },
+    (payload) => appendMessage(payload.new)
+  )
+  .subscribe();
+
+/* ---------------- ABLY CONNECTION ---------------- */
+
+async function getStarted() {
+  const realtimeClient = new Ably.Realtime({
+    key: "byX7hg.KWLT5w:3Z3O2-HCCQdtA8182ql8YcOMTtRear5z2ea5d8CLnzg",
+    clientId: getUsername(),
+  });
+
+  await realtimeClient.connection.once("connected");
+
+  const connectedText = document.createElement("p");
+  connectedText.textContent = "You are now connected";
+  connectedText.style.color = "lightgreen";
+
+  messagesDiv.appendChild(connectedText);
+}
+
+getStarted();
+
+/* ---------------- BUTTON + ENTER ---------------- */
+
+sendButton.addEventListener("click", sendMessage);
+
+messageInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendMessage();
+});
+
+/* ---------------- UNREAD COUNTER ---------------- */
+
+const originalTitle = document.title;
+let unreadCount = 0;
+
+function updateTitle() {
+  document.title =
+    unreadCount > 0 ? `(${unreadCount}) ${originalTitle}` : originalTitle;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    unreadCount = 0;
+    updateTitle();
+  }
+});
+
+/* ---------------- INIT ---------------- */
+
+loadMessages();
+</script>
+
+
+  </body>
+</html>
