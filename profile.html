@@ -1,188 +1,211 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Profile</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loading Profile...</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #2a2a2a;
+    overflow: hidden; /* Prevent outside scroll */
+}
 
-        .achievement-btn {
-            margin: 4px;
-            padding: 6px 10px;
-            cursor: pointer;
-        }
+/* Main Profile Container fills entire window */
+.profileInfo {
+    width: 100%;
+    height: 100%;
+    background-color: #403d3d;
+    padding: 8px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+}
 
-        /* Modal */
-        #modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-        }
+/* Make everything size properly */
+.profileInfo * {
+    max-width: 100%;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
 
-        #modalContent {
-            background: white;
-            padding: 16px;
-            width: 320px;
-            margin: 15% auto;
-            border-radius: 6px;
-        }
+/* Profile picture */
+#pfp {
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
 
-        #closeModal {
-            float: right;
-            cursor: pointer;
-            font-weight: bold;
-            
-        }
-        
-    </style>
+/* Username */
+#usernameContainer {
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 6px;
+}
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+/* Achievements section scrolls if too many */
+#achievementsContainer {
+    width: 100%;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* Achievement buttons */
+.achievement-btn {
+    width: 100%;
+    margin-bottom: 4px;
+    padding: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* Modal */
+#modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+}
+
+#modalContent {
+    background: white;
+    color: black;
+    padding: 12px;
+    width: 90%;
+    max-width: 250px;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+#closeModal {
+    float: right;
+    cursor: pointer;
+    font-weight: bold;
+}
+</style>
+
 </head>
+
 <body>
 
-<div style="display: none;" id="userSearch">
-  <h1>User Search</h1>
-  <input type="text" id="nameSearch" placeholder="Put Username Here"/>
-  <button id="userSubmit" onclick="fetchProfile()">Search</button>
+<div class="profileInfo" id="profileInfo">
+    <img id="pfp" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKcwQAZ3oKlN1GhARw9T8KePcr7ILTNbIZSw&s" alt="profile picture"/>
+    <h1 id="usernameContainer">User:</h1>
+    <div id="achievementsContainer">Loading...</div>
 </div>
 
-
-<div class="profileInfo" id="profileInfo">
-    <h1 id="USERNAME">Loading...</h1>
-
-    <h2>Achievements/Badges</h2>
-    <div id="achievementsContainer">Loading...</div>
-    <h2 style="display: none;">Bio:</h2>
-    <p style="display: none;" id="BIO"></p>
-    <br>
-    <p id="BANNED" style="display:none;"></p>
-
-    <!-- Modal -->
-    <div id="modal">
-        <div id="modalContent">
-            <span id="closeModal">X</span>
-            <h3 id="modalTitle"></h3>
-            <p id="modalAbout"></p>
-        </div>
+<div id="modal">
+    <div id="modalContent">
+        <span id="closeModal">X</span>
+        <h3 id="modalTitle"></h3>
+        <p id="modalAbout"></p>
     </div>
 </div>
-    <script>
-    const profileInfo = document.getElementById("profileInfo");
-    const userSearch = document.getElementById("userSearch");
-    
-  
-    //Set the User to search from the URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const userToSearch = urlParams.get("user");
-      document.title = `${userToSearch}'s Profile`;
-        
-      
-  
-        const SUPABASE_URL = "https://cjctbzgebedmhylmhmuj.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RiemdlYmVkbWh5bG1obXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjA2MDAsImV4cCI6MjA4MDc5NjYwMH0.XetU-QXEKxIFruX5_HrdRH1AhXKtQpkhrtYNrOS37Qc";
 
-        const supabaseClient = supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_KEY
-        );
+<script>
+// URL user
+const urlParams = new URLSearchParams(window.location.search);
+const userToSearch = urlParams.get("user");
+document.title = userToSearch ? `${userToSearch}'s Profile` : "Profile";
 
-        const modal = document.getElementById("modal");
-        const modalTitle = document.getElementById("modalTitle");
-        const modalAbout = document.getElementById("modalAbout");
+// Supabase
+const SUPABASE_URL = "https://cjctbzgebedmhylmhmuj.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RiemdlYmVkbWh5bG1obXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjA2MDAsImV4cCI6MjA4MDc5NjYwMH0.XetU-QXEKxIFruX5_HrdRH1AhXKtQpkhrtYNrOS37Qc";
 
-        document.getElementById("closeModal").onclick = () => {
-            modal.style.display = "none";
-        };
+const supabaseClient = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
-        function openAchievement(name, about) {
-            modalTitle.textContent = name;
-            modalAbout.textContent = about;
-            modal.style.display = "block";
-        }
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modalTitle");
+const modalAbout = document.getElementById("modalAbout");
 
-        async function fetchProfile() {
-    // Ensure we use the user from the URL if available
-    const searchName = userToSearch || document.getElementById('nameSearch').value;
-    
-    if (!searchName) return; // Don't search if empty
+document.getElementById("closeModal").onclick = () => {
+    modal.style.display = "none";
+};
 
-    profileInfo.style.display = 'block'; // Fixed .style property
-    
+function openAchievement(name, about) {
+    modalTitle.textContent = name;
+    modalAbout.textContent = about;
+    modal.style.display = "flex";
+}
+
+const achievementsContainer = document.getElementById('achievementsContainer');
+const usernameContainer = document.getElementById('usernameContainer');
+const pfp = document.getElementById('pfp');
+
+async function fetchProfile() {
+    if (!userToSearch) return;
+
     const { data, error } = await supabaseClient
         .from("profiles")
-        .select("username, bio, Banned, achievements")
-        .eq("username", searchName)
+        .select("username, bio, Banned, achievements, pfp")
+        .eq("username", userToSearch)
         .maybeSingle();
 
     if (error || !data) {
-        console.error(error);
-        document.getElementById("USERNAME").textContent = "User not found";
+        usernameContainer.textContent = "User not found";
         return;
     }
 
-    document.getElementById("USERNAME").textContent = data.username;
-    document.getElementById("BIO").textContent = data.bio ?? 'No Bio';
-    document.getElementById("BANNED").textContent =
-        "Banned Status: " + (data.Banned ?? "Not Banned");
-
+    usernameContainer.textContent = data.username;
+    pfp.src = data.pfp || 'https://bonfire-chat.neocities.org/PFP/unknown.jpg';
     loadAchievements(data.achievements);
 }
 
+async function loadAchievements(achievementIds) {
+    achievementsContainer.innerHTML = "";
 
-        async function loadAchievements(achievementIds) {
-            const container = document.getElementById("achievementsContainer");
-            container.innerHTML = "";
+    if (!achievementIds || achievementIds.length === 0) {
+        achievementsContainer.textContent = "No Achievements";
+        return;
+    }
 
-            if (!achievementIds || achievementIds.length === 0) {
-                container.textContent = "No Achievements";
-                return;
-            }
+    if (typeof achievementIds === "string") {
+        achievementIds = achievementIds
+            .split(",")
+            .map(id => parseInt(id.trim()))
+            .filter(id => !isNaN(id));
+    }
 
-            // Accept array OR "1,2,3"
-            if (typeof achievementIds === "string") {
-                achievementIds = achievementIds
-                    .split(",")
-                    .map(id => parseInt(id.trim()))
-                    .filter(id => !isNaN(id));
-            }
+    const { data, error } = await supabaseClient
+        .from("achievements")
+        .select("id, name, about")
+        .in("id", achievementIds);
 
-            if (achievementIds.length === 0) {
-                container.textContent = "No Achievements";
-                return;
-            }
+    if (error) {
+        achievementsContainer.textContent = "Failed to load achievements";
+        return;
+    }
 
-            const { data, error } = await supabaseClient
-                .from("achievements")
-                .select("id, name, about")
-                .in("id", achievementIds);
+    data.forEach(ach => {
+        const btn = document.createElement("button");
+        btn.className = "achievement-btn";
+        btn.textContent = ach.name;
+        btn.onclick = () => openAchievement(ach.name, ach.about);
+        achievementsContainer.appendChild(btn);
+    });
+}
 
-            if (error) {
-                console.error(error);
-                container.textContent = "Failed to load achievements";
-                return;
-            }
+if (userToSearch) {
+    fetchProfile();
+}
+</script>
 
-            data.forEach(ach => {
-                const btn = document.createElement("button");
-                btn.className = "achievement-btn";
-                btn.textContent = ach.name;
-
-                btn.onclick = () => {
-                    openAchievement(ach.name, ach.about);
-                };
-
-                container.appendChild(btn);
-            });
-        }
-        if (userToSearch != null) {
-          fetchProfile();
-        }
-
-    </script>
 </body>
 </html>
