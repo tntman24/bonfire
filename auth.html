@@ -18,8 +18,13 @@
 
     <label for="roleSelect" id="roleSelectText" style="display:none;">Select Role:</label>
     <select id="roleSelect" style="display:none;"></select>
+    <p id="errorText"></p>
     <a href="chat.html"><button>Enter Chat</button></a>
     <script>
+
+   
+    
+
       // Supabase
       const supabaseUrl = "https://cjctbzgebedmhylmhmuj.supabase.co";
       const supabaseKey =
@@ -31,6 +36,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const uuidFromForm = urlParams.get("password");
       const savedUUID = localStorage.getItem("uuid");
+
 
       const finalUUID = uuidFromForm || savedUUID;
       document.getElementById("uuid").value = finalUUID || "";
@@ -94,6 +100,8 @@
         } else {
           document.getElementById("roleSelectText").style.display = "block";
           localStorage.setItem("userID",data.id);
+          localStorage.setItem('loggedIn','1');
+          localStorage.setItem('password',data.BonID)
         }
 
         if (!Array.isArray(data.role) || data.role.length === 0) {
