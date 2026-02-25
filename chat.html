@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="/CSS/chat.css" />
 
     <style>
- .box {
+      .box {
         width: 100%;
         height: auto;
         background-color: red;
@@ -167,7 +167,7 @@ body {
 const testSite = true;
 
 if (localStorage.getItem("loggedIn") !== "1") {
-  window.location.href = "auth.html";
+  window.location.href = "https://example.org";
 }
 
 /* ---------------- ROOM SETUP ---------------- */
@@ -224,6 +224,7 @@ function setRankColor(el, rank) {
   else if (rank === "Lead Developer") el.style.color = "#4a9905";
   else if (rank === "Head Moderator") el.style.color = "#8928f7";
   else if (rank === "Jr Dev") el.style.color = "#1aa31a";
+  else if (rank === "Dr P Dealer") el.style.color = "#da9100";
   else el.style.color = "white";
 }
 
@@ -443,23 +444,37 @@ async function checkRoleData() {
 }
 
 // Usage
+/*
 (async () => {
   const isValid = await checkRoleData();
   if (!isValid) alert("Role mismatch detected!");
 })();
+*/
 
+ async function getStarted() {
+  const realtimeClient = new Ably.Realtime({
+    key: "byX7hg.KWLT5w:3Z3O2-HCCQdtA8182ql8YcOMTtRear5z2ea5d8CLnzg",
+    clientId: getUsername(),
+  });
 
+  await realtimeClient.connection.once("connected");
+
+  const connectedText = document.createElement("p");
+  connectedText.textContent = "You are now connected";
+  connectedText.style.color = "lightgreen";
+
+  messagesDiv.appendChild(connectedText);
+}
 
 
 
 /* ---------------- INIT ---------------- */
 
 loadMessages();
+getStarted();
 
 </script>
 
 
   </body>
 </html>
-
-
