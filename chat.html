@@ -80,6 +80,21 @@ body {
         bottom: 0;
         left: 15%;
       }
+
+.replyText {
+    width: 84%;
+    box-sizing: border-box;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border-radius: 4px;
+    position: absolute;
+    bottom: 5%;
+    left: 15%;
+    display: none;
+}
+
+
       
       .sendButton {
         width: 5%;
@@ -118,6 +133,12 @@ body {
         width: 15%;
         font-size: 20px;
       }
+
+      .messageArea {
+        width: 84%;
+        left: 15%;
+        
+      }
     </style>
   </head>
 
@@ -146,6 +167,10 @@ body {
 <audio id="player" style="display:none;"></audio>
 
     <center>
+      <div class="replyText" id="replyTextDiv">
+        <p id="replyTextP">gh</p>
+        <button onclick="testFunction()"id="replyTextClose">Stop Reply</button>
+      </div>
       <input
         class="messageBox"
         id="message"
@@ -153,8 +178,8 @@ body {
         placeholder="Type a message | Press Enter to Send"
         autocomplete="off"
       />
+      <P id="replyText">trets</P>
       <button class="sendButton" id="send" type="button">Send</button>
-
       <br /><br />
       <!-- Keep room when navigating -->
       <a id="enterChatLink" href="chat.html"><button type="button">Enter Chat</button></a>
@@ -162,7 +187,14 @@ body {
     
     <!-- DO NOT TOUCH THIS! THE ENTIRE CHAT SYSTEM WILL BREAK -->
     <script>
+      let messageReply = "ypypyp";
+      let replyActive = 0;
+
 /* ---------------- LOGIN CHECK ---------------- */
+
+let replyUser = null;
+let replyRank = null;
+let replyContent = null;
 
 const testSite = true;
 
@@ -278,11 +310,15 @@ function appendMessage(msg) {
 
   /* --- NORMAL TEXT --- */
   else {
+
+
+    const messageSentTextBox = document.createElement('div');
+
     const p = document.createElement("p");
     p.textContent = `${msg.username}${rankTag}: ${msg.message}`;
     p.title = `Message sent at ${timeString}`;
     setRankColor(p, msg.rank);
-
+    
     p.addEventListener("click", () => {
       window.open(
         `profile.html?user=${encodeURIComponent(msg.username)}`,
@@ -290,8 +326,24 @@ function appendMessage(msg) {
         "width=200,height=500,resizable=no,scrollbars=no"
       );
     });
+    
+      if (msg.reply === 'true') {
+        console.log(msg.reply);
+        const replyP = document.createElement('p');
+        replyP.style.fontSize = '10px'
+        replyP.style.margin = "0px"
+        replyP.style.padding = "0px"
+        replyP.textContent = `${msg.replyUser} [${msg.replyRank}]: ${msg.replyContent} ↩`;
+        messageSentTextBox.appendChild(replyP)
+        setRankColor(replyP,msg.replyRank)
+  } 
 
-    messagesDiv.appendChild(p);
+    p.addEventListener("contextmenu", function (event) {
+    event.preventDefault(); // Stops the default right-click menu
+    replyTest(msg.id,msg.username,msg.rank,msg.message);
+});
+    messageSentTextBox.appendChild(p);
+    messagesDiv.appendChild(messageSentTextBox);
   }
 
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -346,13 +398,17 @@ async function sendMessage() {
   }
 
   const savedRole = (localStorage.getItem("role") || "").trim();
-
+  if (replyActive = null || replyActive === true) { messageReply = true } else { messageReply = false}
   const payload = {
     username,
     message: text,
     room,
     epochTime: timeSent,
     userId,
+    reply: messageReply,
+    replyUser: replyUser,
+    replyRank: replyRank,
+    replyContent: replyContent
   };
 
   if (savedRole) payload.rank = savedRole;
@@ -366,6 +422,7 @@ async function sendMessage() {
   }
 
   messageInput.value = "";
+  testFunction()
 }
 
 /* ---------------- REALTIME ---------------- */
@@ -408,6 +465,7 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
     unreadCount = 0;
     updateTitle();
+    console.log("NOT HIDDEN");
   }
 });
 
@@ -473,6 +531,36 @@ async function checkRoleData() {
 loadMessages();
 getStarted();
 
+
+
+
+
+function replyTest(msgID,msgUSER,msgRank,msgContent) {
+  replyActive = true;
+  console.log(msgID);
+  console.log(msgUSER);
+  console.log(msgRank);
+  console.log(msgContent);
+
+   replyUser = msgUSER;
+   replyRank = msgRank;
+   replyContent = msgContent;
+  
+  console.log('RUN')
+  messagesDiv.style.height = "83vh"
+  const replyText = document.getElementById('replyTextDiv');
+  const replyTextP = document.getElementById('replyTextP')
+  replyText.style.display = "inline-block";
+  replyTextP.textContent = `Replying to ${msgUSER}`;
+}
+
+
+function testFunction() {
+  console.log('test')
+  replyActive = false;
+  messagesDiv.style.height = "90vh"
+  replyTextDiv.style.display = "none";
+}
 </script>
 
 
