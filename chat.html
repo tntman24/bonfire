@@ -187,6 +187,7 @@ body {
     
     <!-- DO NOT TOUCH THIS! THE ENTIRE CHAT SYSTEM WILL BREAK -->
     <script>
+      const userId = localStorage.getItem('userID')
       let messageReply = "ypypyp";
       let replyActive = 0;
 
@@ -321,7 +322,7 @@ function appendMessage(msg) {
     
     p.addEventListener("click", () => {
       window.open(
-        `profile.html?user=${encodeURIComponent(msg.username)}`,
+        `profile.html?user=${encodeURIComponent(msg.userId)}`,
         `${msg.username}'s Profile`,
         "width=200,height=500,resizable=no,scrollbars=no"
       );
@@ -379,7 +380,7 @@ async function sendMessage() {
   let username = getUsername();
   const text = messageInput?.value.trim();
   const timeSent = Date.now();
-  const userId = localStorage.getItem("userID");
+  
 
   if (!text) return;
 
@@ -561,6 +562,10 @@ function testFunction() {
   messagesDiv.style.height = "90vh"
   replyTextDiv.style.display = "none";
 }
+
+
+
+
 </script>
 
 
