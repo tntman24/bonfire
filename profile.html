@@ -120,7 +120,7 @@ html, body {
 // URL user
 const urlParams = new URLSearchParams(window.location.search);
 const userToSearch = urlParams.get("user");
-document.title = userToSearch ? `${userToSearch}'s Profile` : "Profile";
+
 
 // Supabase
 const SUPABASE_URL = "https://cjctbzgebedmhylmhmuj.supabase.co";
@@ -155,7 +155,7 @@ async function fetchProfile() {
     const { data, error } = await supabaseClient
         .from("profiles")
         .select("username, bio, Banned, achievements, pfp")
-        .eq("username", userToSearch)
+        .eq("id", userToSearch)
         .maybeSingle();
 
     if (error || !data) {
@@ -205,6 +205,8 @@ async function loadAchievements(achievementIds) {
 if (userToSearch) {
     fetchProfile();
 }
+
+document.title = userToSearchUsername ? `${userToSearchUsername}'s Profile` : "Profile";
 </script>
 
 </body>
