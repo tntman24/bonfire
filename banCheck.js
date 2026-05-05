@@ -1,5 +1,5 @@
-  supabaseUrl = "https://cjctbzgebedmhylmhmuj.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RiemdlYmVkbWh5bG1obXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMjA2MDAsImV4cCI6MjA4MDc5NjYwMH0.XetU-QXEKxIFruX5_HrdRH1AhXKtQpkhrtYNrOS37Qc";
+  supabaseUrl = "SupaBase URL";
+      const supabaseKey = "SupaBase Anon Key";
       const { createClient } = supabase;
       const client = createClient(supabaseUrl, supabaseKey);
       
